@@ -53,6 +53,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         id: '3', name: 'phuc nguyen', completed: true, dateCreated: '2023')
   ];
 
+  //List chứa danh sách tìm kiếm
+  List<DataItems> foundItems = [];
+
   // xu ly them cong viec
   void _handleaddTask(String name, date) {
     // id : lấy giờ hiện tại
@@ -66,11 +69,20 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   @override
   void initState() {
     // TODO: implement initState
+    foundItems = items;
     super.initState();
 
     searchControler = TextEditingController();
+
     _tabController = TabController(length: 3, vsync: this);
   }
+
+  // @override
+  // void dispose() {
+  //   // TODO: implement dispose]
+  //   searchControler.dispose();
+  //   super.dispose();
+  // }
 
   void _handleDeleteTask(String id) {
     setState(() {
@@ -78,24 +90,31 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
   }
 
-  List<DataItems> results = [];
   void _filltersItems(String keyWord) {
+    List<DataItems> results = [];
     // for (var item in items) {
     //   if (item.name!.toLowerCase().contains(keyWord.toLowerCase())) {
     //     results.add(item);
     //   }
     // }
+    if (keyWord.isEmpty) {
+      results = items;
+    } else {
+      results = items
+          .where((element) =>
+              element.name!.toLowerCase().contains(keyWord.toLowerCase()))
+          .toList();
+    }
 
-    results = items
-        .where((element) =>
-            element.name!.toLowerCase().contains(keyWord.toLowerCase()))
-        .toList();
+    setState(() {
+      foundItems = results;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     var getCompated =
-        items.where((element) => element.completed == true).toList();
+        foundItems.where((element) => element.completed == true).toList();
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -136,9 +155,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                 child: TextField(
                   controller: searchControler,
                   onChanged: (value) {
-                    setState(() {
-                      _filltersItems(value);
-                    });
+                    _filltersItems(value);
                   },
                   decoration: InputDecoration(
                       prefixIcon: Icon(
@@ -157,90 +174,95 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                  child: ListView.builder(
-                    itemCount: items.length,
-                    itemBuilder: (context, index) {
-                      return Card(
-                        child: ListTile(
-                          onLongPress: () {
-                            setState(() {
-                              items.removeAt(index);
-                            });
+                  child: foundItems.isNotEmpty
+                      ? ListView.builder(
+                          itemCount: foundItems.length,
+                          itemBuilder: (context, index) {
+                            return Card(
+                              child: ListTile(
+                                onLongPress: () {
+                                  setState(() {
+                                    foundItems.removeAt(index);
+                                  });
+                                },
+                                onTap: () {
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            EditItem(foundItems[index]),
+                                      )).whenComplete(() {
+                                    setState(() {});
+                                  });
+                                },
+                                leading: Icon(Icons.flutter_dash),
+                                title: Text(
+                                  foundItems[index].name!,
+                                  style: TextStyle(
+                                      decoration: items[index].completed!
+                                          ? TextDecoration.lineThrough
+                                          : null),
+                                ),
+                                subtitle: Text(
+                                  foundItems[index].dateCreated!,
+                                ),
+                                trailing: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      foundItems[index].completed =
+                                          !foundItems[index].completed!;
+                                    });
+                                  },
+                                  child: Icon(
+                                    foundItems[index].completed!
+                                        ? Icons.check
+                                        : Icons.check_box_outline_blank,
+                                    color: Colors.amber,
+                                  ),
+                                ),
+                              ),
+                            );
                           },
-                          onTap: () {
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => EditItem(items[index]),
-                                )).whenComplete(() {
-                              setState(() {});
-                            });
-                          },
-                          leading: Icon(Icons.flutter_dash),
-                          title: Text(
-                            items[index].name!,
-                            style: TextStyle(
-                                decoration: items[index].completed!
-                                    ? TextDecoration.lineThrough
-                                    : null),
-                          ),
-                          subtitle: Text(
-                            items[index].dateCreated!,
-                          ),
-                          trailing: GestureDetector(
+
+                          // items
+                          //     .map((item) => CarBody(
+                          //         index: items.indexOf(item),
+                          //         item: item,
+                          //         handleDeleteTask: _handleDeleteTask))
+                          //     .toList(),
+                        )
+                      : const Text(
+                          'No results found',
+                          style: TextStyle(fontSize: 24),
+                        ),
+                ),
+                Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 20),
+                    child: ListView.builder(
+                      itemCount: getCompated.length,
+                      itemBuilder: (context, index) {
+                        var complated = getCompated[index];
+                        return Card(
+                          child: ListTile(
                             onTap: () {
-                              setState(() {
-                                items[index].completed =
-                                    !items[index].completed!;
-                              });
+                              setState(() {});
                             },
-                            child: Icon(
-                              items[index].completed!
+                            leading: Icon(Icons.flutter_dash),
+                            title: Text(
+                              '${complated.name}',
+                            ),
+                            subtitle: Text(foundItems[index].dateCreated!),
+                            trailing: Icon(
+                              complated.completed!
                                   ? Icons.check
                                   : Icons.check_box_outline_blank,
                               color: Colors.amber,
                             ),
                           ),
-                        ),
-                      );
-                    },
-
-                    // items
-                    //     .map((item) => CarBody(
-                    //         index: items.indexOf(item),
-                    //         item: item,
-                    //         handleDeleteTask: _handleDeleteTask))
-                    //     .toList(),
-                  ),
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                  child: ListView.builder(
-                    itemCount: getCompated.length,
-                    itemBuilder: (context, index) {
-                      var complated = getCompated[index];
-                      return Card(
-                        child: ListTile(
-                          onTap: () {
-                            setState(() {});
-                          },
-                          leading: Icon(Icons.flutter_dash),
-                          title: Text(
-                            '${complated.name}',
-                          ),
-                          subtitle: Text(items[index].dateCreated!),
-                          trailing: Icon(
-                            complated.completed!
-                                ? Icons.check
-                                : Icons.check_box_outline_blank,
-                            color: Colors.amber,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                        );
+                      },
+                    )),
                 Container(
                   child: Text('man hinh 3'),
                 )
